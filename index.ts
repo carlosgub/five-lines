@@ -1,4 +1,3 @@
-
 const TILE_SIZE = 30;
 const FPS = 30;
 const SLEEP = 1000 / FPS;
@@ -14,9 +13,77 @@ enum Tile {
   KEY2, LOCK2
 }
 
-enum Input {
+enum RawInput {
   UP, DOWN, LEFT, RIGHT
 }
+
+interface Input{
+  isRight():Boolean;
+  isLeft():Boolean;
+  isUp():Boolean;
+  isDown():Boolean;
+}
+
+class Right implements Input{
+  isRight(): Boolean {
+    return true;
+  }
+  isLeft(): Boolean {
+    return false;
+  }
+  isUp(): Boolean {
+    return false;
+  }
+  isDown(): Boolean {
+    return false;
+  }
+}
+
+class Left implements Input{
+  isRight(): Boolean {
+    return false;
+  }
+  isLeft(): Boolean {
+    return true;
+  }
+  isUp(): Boolean {
+    return false;
+  }
+  isDown(): Boolean {
+    return false;
+  }
+}
+
+class Up implements Input{
+  isRight(): Boolean {
+    return false;
+  }
+  isLeft(): Boolean {
+    return false;
+  }
+  isUp(): Boolean {
+    return true;
+  }
+  isDown(): Boolean {
+    return false;
+  }
+}
+
+class Down implements Input{
+  isRight(): Boolean {
+    return false;
+  }
+  isLeft(): Boolean {
+    return false;
+  }
+  isUp(): Boolean {
+    return false;
+  }
+  isDown(): Boolean {
+    return true;
+  }
+}
+
 
 let playerx = 1;
 let playery = 1;
@@ -81,44 +148,66 @@ function moveVertical(dy: number) {
 }
 
 function update() {
+  handleInputs()
+  updateMap()
+}
+
+function handleInputs() {
   while (inputs.length > 0) {
     let current = inputs.pop();
-    if (current === Input.LEFT)
-      moveHorizontal(-1);
-    else if (current === Input.RIGHT)
-      moveHorizontal(1);
-    else if (current === Input.UP)
-      moveVertical(-1);
-    else if (current === Input.DOWN)
-      moveVertical(1);
+    handleInput(current)
   }
+}
 
+function handleInput(input: Input) {
+  if (input.isLeft)
+    moveHorizontal(-1);
+  else if (input.isRight)
+    moveHorizontal(1);
+  else if (input.isUp)
+    moveVertical(-1);
+  else if (input.isDown)
+    moveVertical(1);
+}
+
+function updateMap() {
   for (let y = map.length - 1; y >= 0; y--) {
     for (let x = 0; x < map[y].length; x++) {
-      if ((map[y][x] === Tile.STONE || map[y][x] === Tile.FALLING_STONE)
-        && map[y + 1][x] === Tile.AIR) {
-        map[y + 1][x] = Tile.FALLING_STONE;
-        map[y][x] = Tile.AIR;
-      } else if ((map[y][x] === Tile.BOX || map[y][x] === Tile.FALLING_BOX)
-        && map[y + 1][x] === Tile.AIR) {
-        map[y + 1][x] = Tile.FALLING_BOX;
-        map[y][x] = Tile.AIR;
-      } else if (map[y][x] === Tile.FALLING_STONE) {
-        map[y][x] = Tile.STONE;
-      } else if (map[y][x] === Tile.FALLING_BOX) {
-        map[y][x] = Tile.BOX;
-      }
+      updateTile(x, y)
     }
   }
 }
 
-function draw() {
+function updateTile(x: number, y: number) {
+  if ((map[y][x] === Tile.STONE || map[y][x] === Tile.FALLING_STONE)
+    && map[y + 1][x] === Tile.AIR) {
+    map[y + 1][x] = Tile.FALLING_STONE;
+    map[y][x] = Tile.AIR;
+  } else if ((map[y][x] === Tile.BOX || map[y][x] === Tile.FALLING_BOX)
+    && map[y + 1][x] === Tile.AIR) {
+    map[y + 1][x] = Tile.FALLING_BOX;
+    map[y][x] = Tile.AIR;
+  } else if (map[y][x] === Tile.FALLING_STONE) {
+    map[y][x] = Tile.STONE;
+  } else if (map[y][x] === Tile.FALLING_BOX) {
+    map[y][x] = Tile.BOX;
+  }
+}
+
+function createGraphics() {
   let canvas = document.getElementById("GameCanvas") as HTMLCanvasElement;
   let g = canvas.getContext("2d");
-
   g.clearRect(0, 0, canvas.width, canvas.height);
+  return g;
+}
 
-  // Draw map
+function draw() {
+  let g = createGraphics()
+  drawMap(g)
+  drawPlayer(g)
+}
+
+function drawMap(g: CanvasRenderingContext2D) {
   for (let y = 0; y < map.length; y++) {
     for (let x = 0; x < map[y].length; x++) {
       if (map[y][x] === Tile.FLUX)
@@ -138,8 +227,9 @@ function draw() {
         g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
     }
   }
+}
 
-  // Draw player
+function drawPlayer(g: CanvasRenderingContext2D) {
   g.fillStyle = "#ff0000";
   g.fillRect(playerx * TILE_SIZE, playery * TILE_SIZE, TILE_SIZE, TILE_SIZE);
 }
@@ -163,9 +253,9 @@ const UP_KEY = 38;
 const RIGHT_KEY = 39;
 const DOWN_KEY = 40;
 window.addEventListener("keydown", e => {
-  if (e.keyCode === LEFT_KEY || e.key === "a") inputs.push(Input.LEFT);
-  else if (e.keyCode === UP_KEY || e.key === "w") inputs.push(Input.UP);
-  else if (e.keyCode === RIGHT_KEY || e.key === "d") inputs.push(Input.RIGHT);
-  else if (e.keyCode === DOWN_KEY || e.key === "s") inputs.push(Input.DOWN);
+  if (e.keyCode === LEFT_KEY || e.key === "a") inputs.push(new Left);
+  else if (e.keyCode === UP_KEY || e.key === "w") inputs.push(new Up);
+  else if (e.keyCode === RIGHT_KEY || e.key === "d") inputs.push(new Right);
+  else if (e.keyCode === DOWN_KEY || e.key === "s") inputs.push(new Down());
 });
 

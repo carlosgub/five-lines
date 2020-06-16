@@ -22,12 +22,13 @@ interface Input{
   isLeft():Boolean;
   isUp():Boolean;
   isDown():Boolean;
+  handle(): void;
 }
 
 class Right implements Input{
   isRight(): Boolean {
     return true;
-  }
+  } 
   isLeft(): Boolean {
     return false;
   }
@@ -37,6 +38,10 @@ class Right implements Input{
   isDown(): Boolean {
     return false;
   }
+  handle(): void {
+      moveHorizontal(1);
+  }
+
 }
 
 class Left implements Input{
@@ -51,6 +56,9 @@ class Left implements Input{
   }
   isDown(): Boolean {
     return false;
+  }
+  handle(): void {
+      moveHorizontal(-1);
   }
 }
 
@@ -67,6 +75,9 @@ class Up implements Input{
   isDown(): Boolean {
     return false;
   }
+  handle(): void {
+    moveVertical(-1);
+  }
 }
 
 class Down implements Input{
@@ -81,6 +92,9 @@ class Down implements Input{
   }
   isDown(): Boolean {
     return true;
+  }
+  handle(): void {
+    moveVertical(1);
   }
 }
 
@@ -155,19 +169,8 @@ function update() {
 function handleInputs() {
   while (inputs.length > 0) {
     let current = inputs.pop();
-    handleInput(current)
+    current.handle
   }
-}
-
-function handleInput(input: Input) {
-  if (input.isLeft)
-    moveHorizontal(-1);
-  else if (input.isRight)
-    moveHorizontal(1);
-  else if (input.isUp)
-    moveVertical(-1);
-  else if (input.isDown)
-    moveVertical(1);
 }
 
 function updateMap() {

@@ -2,48 +2,6 @@ const TILE_SIZE = 30;
 const FPS = 30;
 const SLEEP = 1000 / FPS;
 
-class FallStrategy {
-  constructor(private falling: boolean) { }
-  isFalling() { return this.falling; }
-
-  update(map: Map, tile: Tile, x: number, y: number) {
-    this.falling = map.isAir(x,y+1);
-    this.drop(map, tile, x, y);
-  }
-  private drop(map:Map, tile: Tile, x: number, y: number) {
-    if (this.falling) {
-      map.drop(tile,x,y);
-    }
-  }
-}
-
-interface Input {
-  handle(map: Map, player: Player): void;
-}
-
-class Right implements Input {
-  handle(map: Map, player: Player) {
-    player.moveHorizontal(map, 1);
-  }
-}
-
-class Left implements Input {
-  handle(map: Map, player: Player) {
-    player.moveHorizontal(map, -1);
-  }
-}
-
-class Up implements Input {
-  handle(map: Map, player: Player) {
-    player.moveVertical(map, -1);
-  }
-}
-
-class Down implements Input {
-  handle(map: Map, player: Player) {
-    player.moveVertical(map, 1);
-  }
-}
 enum RawTile {
   AIR,
   FLUX,
@@ -105,7 +63,7 @@ class Unbreakable implements Tile {
     g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
   }
   moveHorizontal(map: Map, player: Player, dx: number) { }
-  moveVertical(map: Map, layer: Player, dy: number) { }
+  moveVertical(map: Map, player: Player, dy: number) { }
   update(map: Map, x: number, y: number) { }
 }
 
@@ -195,6 +153,48 @@ class Lock implements Tile {
   update(map: Map, x: number, y: number) { }
 }
 
+class FallStrategy {
+  constructor(private falling: boolean) { }
+  isFalling() { return this.falling; }
+  update(map: Map, tile: Tile, x: number, y: number) {
+    this.falling = map.isAir(x, y + 1);
+    this.drop(map, tile, x, y);
+  }
+  private drop(map: Map, tile: Tile, x: number, y: number) {
+    if (this.falling) {
+      map.drop(tile, x, y);
+    }
+  }
+}
+
+interface Input {
+  handle(map: Map, player: Player): void;
+}
+
+class Right implements Input {
+  handle(map: Map, player: Player) {
+    player.moveHorizontal(map, 1);
+  }
+}
+
+class Left implements Input {
+  handle(map: Map, player: Player) {
+    player.moveHorizontal(map, -1);
+  }
+}
+
+class Up implements Input {
+  handle(map: Map, player: Player) {
+    player.moveVertical(map, -1);
+  }
+}
+
+class Down implements Input {
+  handle(map: Map, player: Player) {
+    player.moveVertical(map, 1);
+  }
+}
+
 class Player {
   private x = 1;
   private y = 1;
@@ -202,20 +202,20 @@ class Player {
     g.fillStyle = "#ff0000";
     g.fillRect(this.x * TILE_SIZE, this.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
   }
-  moveHorizontal(map:Map, dx: number) {
-    map.moveHorizontal(this,this.x,this.y,dx);
+  moveHorizontal(map: Map, dx: number) {
+    map.moveHorizontal(this, this.x, this.y, dx);
   }
-  moveVertical(map:Map, dy: number) {
+  moveVertical(map: Map, dy: number) {
     map.moveVertical(this, this.x, this.y, dy);
   }
-  move(map: Map,dx: number, dy: number) {
+  move(map: Map, dx: number, dy: number) {
     this.moveToTile(map, this.x + dx, this.y + dy);
   }
   pushHorizontal(map: Map, tile: Tile, dx: number) {
-    map.pushHorizontal(this, tile, this.x, this.y, dx)
+    map.pushHorizontal(this, tile, this.x, this.y, dx);
   }
   moveToTile(map: Map, newx: number, newy: number) {
-    map.movePlayer(this.x, this.y, newx, newy)
+    map.movePlayer(this.x, this.y, newx, newy);
     this.x = newx;
     this.y = newy;
   }
@@ -229,7 +229,6 @@ let rawMap: RawTile[][] = [
   [2, 4, 1, 1, 1, 9, 0, 2],
   [2, 2, 2, 2, 2, 2, 2, 2],
 ];
-
 class Map {
   private map: Tile[][];
   constructor() {
@@ -316,15 +315,13 @@ let inputs: Input[] = [];
 interface RemoveStrategy {
   check(tile: Tile): boolean;
 }
-
 class RemoveLock1 implements RemoveStrategy {
-  check(tile: Tile): boolean {
+  check(tile: Tile) {
     return tile.isLock1();
   }
 }
-
 class RemoveLock2 implements RemoveStrategy {
-  check(tile: Tile): boolean {
+  check(tile: Tile) {
     return tile.isLock2();
   }
 }
@@ -386,8 +383,8 @@ const UP_KEY = 38;
 const RIGHT_KEY = 39;
 const DOWN_KEY = 40;
 window.addEventListener("keydown", e => {
-  if (e.keyCode === LEFT_KEY || e.key === "a") inputs.push(new Left());
-  else if (e.keyCode === UP_KEY || e.key === "w") inputs.push(new Up());
-  else if (e.keyCode === RIGHT_KEY || e.key === "d") inputs.push(new Right());
-  else if (e.keyCode === DOWN_KEY || e.key === "s") inputs.push(new Down());
+  if (e.keyCode === 37 || e.key === "a") inputs.push(new Left());
+  else if (e.keyCode === 38 || e.key === "w") inputs.push(new Up());
+  else if (e.keyCode === 39 || e.key === "d") inputs.push(new Right());
+  else if (e.keyCode === 40 || e.key === "s") inputs.push(new Down());
 });

@@ -2,16 +2,102 @@ const TILE_SIZE = 30;
 const FPS = 30;
 const SLEEP = 1000 / FPS;
 
-enum RawTile {
-  AIR,
-  FLUX,
-  UNBREAKABLE,
-  PLAYER,
-  STONE, FALLING_STONE,
-  BOX, FALLING_BOX,
-  KEY1, LOCK1,
-  KEY2, LOCK2
+interface RawTileValue {
+  transform(): Tile;
 }
+class AirValue implements RawTileValue {
+  transform() { return new Air(); }
+}
+class FluxValue implements RawTileValue {
+  transform() { return new Flux(); }
+}
+class UnbreakableValue implements RawTileValue {
+  transform() { return new Unbreakable(); }
+}
+class PlayerValue implements RawTileValue {
+  transform() { return new PlayerTile(); }
+}
+class StoneValue implements RawTileValue {
+  transform() { return new Stone(false); }
+}
+class FallingStoneValue implements RawTileValue {
+  transform() { return new Stone(true); }
+}
+class BoxValue implements RawTileValue {
+  transform() { return new Box(false); }
+}
+class FallingBoxValue implements RawTileValue {
+  transform() { return new Box(true); }
+}
+class Key1Value implements RawTileValue {
+  transform() { return new Key(YELLOW_KEY); }
+}
+class Lock1Value implements RawTileValue {
+  transform() { return new Lock(YELLOW_KEY); }
+}
+class Key2Value implements RawTileValue {
+  transform() { return new Key(BLUE_KEY); }
+}
+class Lock2Value implements RawTileValue {
+  transform() { return new Lock(BLUE_KEY); }
+}
+class RawTile {
+  static readonly AIR = new RawTile(new AirValue());
+  static readonly FLUX = new RawTile(new FluxValue());
+  static readonly UNBREAKABLE = new RawTile(new UnbreakableValue());
+  static readonly PLAYER = new RawTile(new PlayerValue());
+  static readonly STONE = new RawTile(new StoneValue());
+  static readonly FALLING_STONE = new RawTile(new FallingStoneValue());
+  static readonly BOX = new RawTile(new BoxValue());
+  static readonly FALLING_BOX = new RawTile(new FallingBoxValue());
+  static readonly KEY1 = new RawTile(new Key1Value());
+  static readonly LOCK1 = new RawTile(new Lock1Value());
+  static readonly KEY2 = new RawTile(new Key2Value());
+  static readonly LOCK2 = new RawTile(new Lock2Value());
+  private constructor(private value: RawTileValue) { }
+  transform() {
+    return this.value.transform();
+  }
+}
+const RAW_TILES = [
+  RawTile.AIR,
+  RawTile.FLUX,
+  RawTile.UNBREAKABLE,
+  RawTile.PLAYER,
+  RawTile.STONE, RawTile.FALLING_STONE,
+  RawTile.BOX, RawTile.FALLING_BOX,
+  RawTile.KEY1, RawTile.LOCK1,
+  RawTile.KEY2, RawTile.LOCK2
+];
+
+interface RemoveStrategy {
+  check(tile: Tile): boolean;
+}
+
+
+class RemoveLock1 implements RemoveStrategy {
+  check(tile: Tile) {
+    return tile.isLock1();
+  }
+}
+class RemoveLock2 implements RemoveStrategy {
+  check(tile: Tile) {
+    return tile.isLock2();
+  }
+}
+
+class KeyConfiguration {
+  constructor(private color: string, private _1: boolean, private removeStrategy: RemoveStrategy) { }
+  setColor(g: CanvasRenderingContext2D) {
+    g.fillStyle = this.color;
+  }
+  is1() { return this._1; }
+  removeLock(map: Map) {
+    map.remove(this.removeStrategy);
+  }
+}
+const YELLOW_KEY = new KeyConfiguration("#ffcc00", true, new RemoveLock1());
+const BLUE_KEY = new KeyConfiguration("#00ccff", false, new RemoveLock2());
 
 interface Tile {
   isAir(): boolean;
@@ -221,7 +307,7 @@ class Player {
   }
 }
 let player = new Player();
-let rawMap: RawTile[][] = [
+let rawMap: number[][] = [
   [2, 2, 2, 2, 2, 2, 2, 2],
   [2, 3, 0, 1, 1, 2, 0, 2],
   [2, 4, 2, 6, 1, 2, 0, 2],
@@ -236,7 +322,7 @@ class Map {
     for (let y = 0; y < rawMap.length; y++) {
       this.map[y] = new Array(rawMap[y].length);
       for (let x = 0; x < rawMap[y].length; x++) {
-        this.map[y][x] = transformTile(rawMap[y][x]);
+        this.map[y][x] = RAW_TILES[rawMap[y][x]].transform();
       }
     }
   }
@@ -292,52 +378,8 @@ let map = new Map();
 function assertExhausted(x: never): never {
   throw new Error("Unexpected object: " + x);
 }
-function transformTile(tile: RawTile) {
-  switch (tile) {
-    case RawTile.AIR: return new Air();
-    case RawTile.PLAYER: return new PlayerTile();
-    case RawTile.UNBREAKABLE: return new Unbreakable();
-    case RawTile.STONE: return new Stone(false);
-    case RawTile.FALLING_STONE: return new Stone(true);
-    case RawTile.BOX: return new Box(false);
-    case RawTile.FALLING_BOX: return new Box(true);
-    case RawTile.FLUX: return new Flux();
-    case RawTile.KEY1: return new Key(YELLOW_KEY);
-    case RawTile.LOCK1: return new Lock(YELLOW_KEY);
-    case RawTile.KEY2: return new Key(BLUE_KEY);
-    case RawTile.LOCK2: return new Lock(BLUE_KEY);
-    default: assertExhausted(tile);
-  }
-}
 
 let inputs: Input[] = [];
-
-interface RemoveStrategy {
-  check(tile: Tile): boolean;
-}
-class RemoveLock1 implements RemoveStrategy {
-  check(tile: Tile) {
-    return tile.isLock1();
-  }
-}
-class RemoveLock2 implements RemoveStrategy {
-  check(tile: Tile) {
-    return tile.isLock2();
-  }
-}
-
-class KeyConfiguration {
-  constructor(private color: string, private _1: boolean, private removeStrategy: RemoveStrategy) { }
-  setColor(g: CanvasRenderingContext2D) {
-    g.fillStyle = this.color;
-  }
-  is1() { return this._1; }
-  removeLock(map: Map) {
-    map.remove(this.removeStrategy);
-  }
-}
-const YELLOW_KEY = new KeyConfiguration("#ffcc00", true, new RemoveLock1());
-const BLUE_KEY = new KeyConfiguration("#00ccff", false, new RemoveLock2());
 
 function update(map: Map, player: Player) {
   handleInputs(map, player);
@@ -371,7 +413,7 @@ function gameLoop(map: Map) {
   let after = Date.now();
   let frameTime = after - before;
   let sleep = SLEEP - frameTime;
-  setTimeout(gameLoop, sleep);
+  setTimeout(() => gameLoop(map), sleep);
 }
 
 window.onload = () => {
@@ -383,8 +425,8 @@ const UP_KEY = 38;
 const RIGHT_KEY = 39;
 const DOWN_KEY = 40;
 window.addEventListener("keydown", e => {
-  if (e.keyCode === 37 || e.key === "a") inputs.push(new Left());
-  else if (e.keyCode === 38 || e.key === "w") inputs.push(new Up());
-  else if (e.keyCode === 39 || e.key === "d") inputs.push(new Right());
-  else if (e.keyCode === 40 || e.key === "s") inputs.push(new Down());
+  if (e.keyCode === LEFT_KEY || e.key === "a") inputs.push(new Left());
+  else if (e.keyCode === UP_KEY || e.key === "w") inputs.push(new Up());
+  else if (e.keyCode === RIGHT_KEY || e.key === "d") inputs.push(new Right());
+  else if (e.keyCode === DOWN_KEY || e.key === "s") inputs.push(new Down());
 });
